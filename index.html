@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+
+        .dice-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .dice {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            perspective: 1000px;
+        }
+
+        .dice.rolling {
+            animation: rolling 0.8s ease-in-out;
+        }
+
+        @keyframes rolling {
+            0% { 
+                transform: rotateX(0deg) rotateY(0deg); 
+            }
+            25% { 
+                transform: rotateX(180deg) rotateY(90deg); 
+            }
+            50% { 
+                transform: rotateX(360deg) rotateY(180deg); 
+            }
+            75% { 
+                transform: rotateX(180deg) rotateY(270deg); 
+            }
+            100% { 
+                transform: rotateX(0deg) rotateY(360deg); 
+            }
+        }
+
+        .dice.held {
+            border: 4px solid #4CAF50;
+            background: #e8f5e9;
+        }
+
+        .button {
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .button:hover {
+            background-color: #45a049;
+        }
+
+        .button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .dice-face {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backface-visibility: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="dice-container" id="diceContainer">
+            <div class="dice" data-index="0"><div class="dice-face">1</div></div>
+            <div class="dice" data-index="1"><div class="dice-face">1</div></div>
+            <div class="dice" data-index="2"><div class="dice-face">1</div></div>
+            <div class="dice" data-index="3"><div class="dice-face">1</div></div>
+            <div class="dice" data-index="4"><div class="dice-face">1</div></div>
+            <div class="dice" data-index="5"><div class="dice-face">1</div></div>
+        </div>
+        <button id="rollButton" class="button">GO</button>
+        <button id="resetButton" class="button">Reset</button>
+    </div>
+
+    <script>
+        const diceElements = document.querySelectorAll('.dice');
+        const rollButton = document.getElementById('rollButton');
+        const resetButton = document.getElementById('resetButton');
+        
+        let diceValues = Array(6).fill(1);
+        let heldDice = Array(6).fill(false);
+        let allDiceHeld = false;
+        let isRolling = false;
+
+        function rollDie() {
+            return Math.floor(Math.random() * 6) + 1;
+        }
+
+        function updateDice(immediate = false) {
+            diceElements.forEach((die, index) => {
+                const diceface = die.querySelector('.dice-face');
+                if (!heldDice[index] && !immediate) {
+                    die.classList.add('rolling');
+                    // Generate random numbers during animation
+                    let rollInterval = setInterval(() => {
+                        diceface.textContent = rollDie();
+                    }, 100);
+
+                    // Set final value after animation
+                    setTimeout(() => {
+                        clearInterval(rollInterval);
+                        diceface.textContent = diceValues[index];
+                        die.classList.remove('rolling');
+                    }, 800);
+                } else {
+                    diceface.textContent = diceValues[index];
+                }
+            });
+        }
+
+        async function rollDice() {
+            if (allDiceHeld || isRolling) return;
+            
+            isRolling = true;
+            rollButton.disabled = true;
+
+            diceValues = diceValues.map((value, index) => 
+                heldDice[index] ? value : rollDie()
+            );
+            
+            updateDice();
+
+            // Wait for animation to complete
+            setTimeout(() => {
+                isRolling = false;
+                allDiceHeld = heldDice.every(held => held);
+                rollButton.disabled = allDiceHeld || isRolling;
+            }, 800);
+        }
+
+        function resetGame() {
+            if (isRolling) return;
+            
+            diceValues = diceValues.map(() => rollDie());
+            heldDice = Array(6).fill(false);
+            allDiceHeld = false;
+            
+            diceElements.forEach(die => {
+                die.classList.remove('held');
+            });
+            
+            updateDice();
+            rollButton.disabled = false;
+        }
+
+        // Event Listeners
+        rollButton.addEventListener('click', rollDice);
+        resetButton.addEventListener('click', resetGame);
+
+        diceElements.forEach(die => {
+            die.addEventListener('click', () => {
+                if (allDiceHeld || isRolling) return;
+                
+                const index = parseInt(die.dataset.index);
+                heldDice[index] = !heldDice[index];
+                die.classList.toggle('held');
+                
+                allDiceHeld = heldDice.every(held => held);
+                rollButton.disabled = allDiceHeld || isRolling;
+            });
+        });
+
+        // Initial roll
+        resetGame();
+    </script>
+</body>
+</html>
