@@ -88,6 +88,29 @@
             justify-content: center;
             backface-visibility: hidden;
         }
+
+        .counters {
+            display: flex;
+            gap: 40px;
+            margin-top: 20px;
+            font-size: 18px;
+            background: #f5f5f5;
+            padding: 15px 25px;
+            border-radius: 8px;
+        }
+
+        .counter {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .counter-value {
+            font-weight: bold;
+            font-size: 24px;
+            color: #4CAF50;
+        }
     </style>
 </head>
 <body>
@@ -102,12 +125,24 @@
         </div>
         <button id="rollButton" class="button">GO</button>
         <button id="resetButton" class="button">Reset</button>
+        <div class="counters">
+            <div class="counter">
+                <span>Held Dice Sum:</span>
+                <span id="heldSum" class="counter-value">0</span>
+            </div>
+            <div class="counter">
+                <span>Total Sum:</span>
+                <span id="totalSum" class="counter-value">0</span>
+            </div>
+        </div>
     </div>
 
     <script>
         const diceElements = document.querySelectorAll('.dice');
         const rollButton = document.getElementById('rollButton');
         const resetButton = document.getElementById('resetButton');
+        const heldSumElement = document.getElementById('heldSum');
+        const totalSumElement = document.getElementById('totalSum');
         
         let diceValues = Array(6).fill(1);
         let heldDice = Array(6).fill(false);
@@ -116,6 +151,15 @@
 
         function rollDie() {
             return Math.floor(Math.random() * 6) + 1;
+        }
+
+        function updateSums() {
+            const heldSum = diceValues.reduce((sum, value, index) => 
+                heldDice[index] ? sum + value : sum, 0);
+            const totalSum = diceValues.reduce((sum, value) => sum + value, 0);
+            
+            heldSumElement.textContent = heldSum;
+            totalSumElement.textContent = totalSum;
         }
 
         function updateDice(immediate = false) {
@@ -133,11 +177,16 @@
                         clearInterval(rollInterval);
                         diceface.textContent = diceValues[index];
                         die.classList.remove('rolling');
+                        updateSums(); // Update sums after animation
                     }, 800);
                 } else {
                     diceface.textContent = diceValues[index];
                 }
             });
+            
+            if (immediate) {
+                updateSums();
+            }
         }
 
         async function rollDice() {
@@ -189,6 +238,8 @@
                 
                 allDiceHeld = heldDice.every(held => held);
                 rollButton.disabled = allDiceHeld || isRolling;
+                
+                updateSums(); // Update sums when dice are held/unheld
             });
         });
 
